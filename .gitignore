@@ -1,0 +1,9 @@
+.terraform/
+*.tfstate
+*.tfstate.backup
+.crds
+*.log
+*.exe
+*.bin
+node_modules/
+.env

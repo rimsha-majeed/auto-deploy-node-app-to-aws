@@ -1,0 +1,54 @@
+provider "aws" {
+  region = var.aws_region
+}
+
+# Create Security Group
+resource "aws_security_group" "node_app_sg" {
+  name        = "node-app-sg"
+  description = "Allow SSH and app port"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow SSH from anywhere
+  }
+
+  ingress {
+    from_port   = var.app_port
+    to_port     = var.app_port
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow app access
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "node-app-sg"
+  }
+}
+
+# Create EC2 instance
+resource "aws_instance" "node_app_instance" {
+  ami                    = "ami-0d1b5a8c13042c939"  # Ubuntu 22.04 LTS in us-east-1
+  instance_type          = var.instance_type
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.node_app_sg.id]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt update -y
+              sudo apt install -y docker.io
+              sudo systemctl start docker
+              sudo docker run -d -p 3000:3000 ${var.docker_image}
+              EOF
+
+  tags = {
+    Name = "NodeAppEC2"
+  }
+}
