@@ -1,3 +1,13 @@
+
+terraform {
+  backend "s3" {
+    bucket         = "terraform-bucket-rimsha"   # ←  your actual bucket name
+    key            = "Terraform/terraform.tfstate"
+    region         = "us-east-2"                    
+    encrypt        = true
+  }
+}
+
 provider "aws" {
   region = var.aws_region
 }
