@@ -1,9 +1,8 @@
-
 terraform {
   backend "s3" {
-    bucket         = "terraform-bucket-rimsha"   # ←  your actual bucket name
+    bucket         = "terraform-bucket-rimsha"
     key            = "Terraform/terraform.tfstate"
-    region         = "us-east-2"                    
+    region         = "us-east-2"
     encrypt        = true
   }
 }
@@ -21,14 +20,14 @@ resource "aws_security_group" "node_app_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Allow SSH from anywhere
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     from_port   = var.app_port
     to_port     = var.app_port
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Allow app access
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -45,7 +44,7 @@ resource "aws_security_group" "node_app_sg" {
 
 # Create EC2 instance
 resource "aws_instance" "node_app_instance" {
-  ami                    = "ami-0d1b5a8c13042c939"  # Ubuntu 22.04 LTS in us-east-1
+  ami                    = "ami-0d1b5a8c13042c939"
   instance_type          = var.instance_type
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.node_app_sg.id]
@@ -61,4 +60,14 @@ resource "aws_instance" "node_app_instance" {
   tags = {
     Name = "NodeAppEC2"
   }
+}
+# Allocate Elastic IP
+resource "aws_eip" "node_app_eip" {
+  domain = "vpc"  
+}
+
+# Associate Elastic IP with EC2 instance
+resource "aws_eip_association" "eip_assoc" {
+  instance_id   = aws_instance.node_app_instance.id
+  allocation_id = aws_eip.node_app_eip.id
 }
