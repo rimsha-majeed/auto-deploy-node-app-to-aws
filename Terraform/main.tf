@@ -11,7 +11,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Create Security Group
 resource "aws_security_group" "node_app_sg" {
   name        = "node-app-sg"
   description = "Allow SSH and app port"
@@ -42,7 +41,6 @@ resource "aws_security_group" "node_app_sg" {
   }
 }
 
-# Create EC2 instance
 resource "aws_instance" "node_app_instance" {
   ami                    = "ami-0d1b5a8c13042c939"
   instance_type          = var.instance_type
@@ -51,22 +49,25 @@ resource "aws_instance" "node_app_instance" {
 
   user_data = <<-EOF
               #!/bin/bash
-              sudo apt update -y
-              sudo apt install -y docker.io
+              sudo apt-get update -y
+              sudo apt-get install -y docker.io awscli
+              sudo systemctl enable docker
               sudo systemctl start docker
-              sudo docker run -d -p 3000:3000 ${var.docker_image}
+
+              echo "${DOCKER_PASSWORD}" | sudo docker login -u "${DOCKER_USERNAME}" --password-stdin
+              sudo docker pull ${DOCKER_IMAGE}
+              sudo docker run -d -p 3000:3000 --name node-app ${DOCKER_IMAGE}
               EOF
 
   tags = {
     Name = "NodeAppEC2"
   }
 }
-# Allocate Elastic IP
+
 resource "aws_eip" "node_app_eip" {
-  domain = "vpc"  
+  domain = "vpc"
 }
 
-# Associate Elastic IP with EC2 instance
 resource "aws_eip_association" "eip_assoc" {
   instance_id   = aws_instance.node_app_instance.id
   allocation_id = aws_eip.node_app_eip.id

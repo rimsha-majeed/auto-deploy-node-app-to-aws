@@ -3,8 +3,10 @@ variable "aws_region" {
 }
 
 variable "key_name" {
-  default = "ec2-key" # Name of your AWS key pair (.pem)
+  description = "SSH Key Pair name for EC2"
+  default     = "ec2-key"  
 }
+
 
 variable "instance_type" {
   default = "t2.micro"
