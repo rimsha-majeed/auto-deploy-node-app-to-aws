@@ -39,3 +39,30 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       run: terraform apply -auto-approve -var="docker_image=${{ secrets.DOCKER_USERNAME }}/node-app:latest"
+
+    - name: Set up SSH agent
+      uses: webfactory/ssh-agent@v0.5.4
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+    - name: SSH into EC2 and deploy container
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          echo "🔁 Pulling latest Docker image..."
+          sudo docker pull ${{ secrets.DOCKER_USERNAME }}/node-app:latest
+
+          echo "🛑 Stopping and removing old container if it exists..."
+          CONTAINER_ID=$(sudo docker ps -q --filter "name=node-app")
+          if [ ! -z "$CONTAINER_ID" ]; then
+            sudo docker stop node-app
+            sudo docker rm node-app
+            echo "✅ Old container removed."
+          else
+            echo "ℹ️ No existing container to remove."
+          fi
+
+          echo "🚀 Starting new container..."
+          sudo docker run -d -p 3000:3000 --name node-app ${{ secrets.DOCKER_USERNAME }}/node-app:latest
+
+          echo "✅ Deployment complete."
+        EOF

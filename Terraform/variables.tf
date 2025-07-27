@@ -20,3 +20,12 @@ variable "docker_image" {
   description = "Docker image to run on EC2"
   type        = string
 }
+
+
+variable "docker_username" {
+  type = string
+}
+
+variable "docker_password" {
+  type = string
+}

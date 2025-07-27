@@ -47,21 +47,17 @@ resource "aws_instance" "node_app_instance" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.node_app_sg.id]
 
-  user_data = <<-EOF
-              #!/bin/bash
-              sudo apt-get update -y
-              sudo apt-get install -y docker.io awscli
-              sudo systemctl enable docker
-              sudo systemctl start docker
-
-              echo "${DOCKER_PASSWORD}" | sudo docker login -u "${DOCKER_USERNAME}" --password-stdin
-              sudo docker pull ${DOCKER_IMAGE}
-              sudo docker run -d -p 3000:3000 --name node-app ${DOCKER_IMAGE}
-              EOF
+  user_data = base64encode(templatefile("${path.module}/user_data.sh.tpl", {
+    docker_image    = var.docker_image
+    docker_username = var.docker_username
+    docker_password = var.docker_password
+  }))
 
   tags = {
     Name = "NodeAppEC2"
   }
+
+  depends_on = [aws_security_group.node_app_sg]
 }
 
 resource "aws_eip" "node_app_eip" {
